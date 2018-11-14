@@ -56,7 +56,8 @@ class MomentTest(unittest.TestCase):
 
                 m = Moment(geom)
 
-                cm = (m(1, 0)/m(0, 0), m(0, 1)/m(0, 0))
+                cm = (m.compute(1, 0, central=False)/m.compute(0, 0, central=False),
+                      m.compute(0, 1, central=False)/m.compute(0, 0, central=False))
 
                 self.assertAlmostEqual(cm[0], response[i][0])
                 self.assertAlmostEqual(cm[1], response[i][1])
