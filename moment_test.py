@@ -28,6 +28,39 @@ class MomentTest(unittest.TestCase):
                 break
             self.geometries.append(feat.GetGeometryRef().Clone())
 
+    def test_center_mass(self):
+
+        wkt = 'POLYGON((-2 -2, 2 -2, 2 2, -2 2, -2 -2), (-1 -1, 1 -1, 1 1, -1 1, -1 -1))'
+
+        geom = list()
+        response = list()
+
+        geom.append(ogr.CreateGeometryFromWkt((wkt)))
+        response.append((0.0, 0.0))
+
+        geom.append(transform_geom(geom[0], angle=35))
+        response.append((0.0, 0.0))
+
+        geom.append(transform_geom(geom[0], shift=(2.0, 44.7)))
+        response.append((2.0, 44.7))
+
+        geom.append(transform_geom(geom[0], scale=3.3))
+        response.append((0.0, 0.0))
+
+        geom.append(transform_geom(geom[0], shift=(1.1, 5.5), angle=45.0))
+        response.append((1.1, 5.5))
+
+        for i in range(len(geom)):
+
+            with self.subTest(i=i, msg='center mass'):
+
+                m = Moment(geom)
+
+                cm = (m(1, 0)/m(0, 0), m(0, 1)/m(0, 0))
+
+                self.assertAlmostEqual(cm[0], response[i][0])
+                self.assertAlmostEqual(cm[1], response[i][1])
+
     def test_translate_invariant(self):
 
         translations = [(10.0, -200.0), (777, 11), (9001, 17893)]
@@ -104,6 +137,9 @@ class MomentTest(unittest.TestCase):
 
             m2 = Moment(transform_geom(self.geometries[0], angle=30.0, scale=0.8))
             self.assertNotAlmostEqual(m1.compute(3, 3, scale_inv=True), m2.compute(3, 3, scale_inv=True))
+
+    def test_parallel_to_axes(self):
+        pass
 
 
 if __name__ == '__main__':
