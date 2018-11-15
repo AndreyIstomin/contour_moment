@@ -5,6 +5,8 @@ import ogr
 class Moment:
 
     def __init__(self, geom: 'GDAL Polygon'):
+
+        print(geom)
         pass
 
     @contract
