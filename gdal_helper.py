@@ -127,6 +127,7 @@ if __name__ == '__main__':
 
     import os
 
+
     def translate_geom_test():
 
         res_dir = os.path.join(os.path.dirname(__file__), 'test_resources')
@@ -161,16 +162,5 @@ if __name__ == '__main__':
         in_ds.Destroy()
         out_ds.Destroy()
 
-    def center_mass_test():
 
-        wkt = 'POLYGON((-2 -2, 2 -2, 2 2, -2 2, -2 -2), (-1 -1, 1 -1, 1 1, -1 1, -1 -1))'
-
-        geom = ogr.CreateGeometryFromWkt(wkt)
-
-        geom = transform_geom(geom, shift=(2.0, 11.0))
-
-        cm = center_mass(geom)
-
-
-    # translate_geom_test();
-    assert center_mass_test()
+    translate_geom_test()
