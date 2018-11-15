@@ -119,7 +119,7 @@ class MomentTest(unittest.TestCase):
                     m2 = Moment(translated)
 
                     with self.subTest(angle=angle, i=i, msg='hu-moment'):
-                        self.assertAlmostEqual(m1.compute_hu(i), m2.compute_hu())
+                        self.assertAlmostEqual(m1.compute_hu(i), m2.compute_hu(i))
 
     def test_hu_moment_no_scale_inv(self):
 
