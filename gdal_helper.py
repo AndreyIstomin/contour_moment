@@ -31,6 +31,26 @@ class Vec2:
         return 'x={}, y={}'.format(self.x, self.y)
 
 
+    def __eq__(self, other):
+        return (self.x , self.y) == (other.x, other.y)
+
+    def __ne__(self, other):
+        return (self.x, self.y) != (other.x, other.y)
+
+    def __lt__(self, other):
+        return ((self.x, self.y) < (other.x, other.y))
+
+    def __le__(self, other):
+        return ((self.x, self.y) <= (other.x, other.y))
+
+    def __gt__(self, other):
+        return ((self.x, self.y) > (other.x, other.y))
+
+    def __ge__(self, other):
+        return ((self.x, self.y) >= (other.x, other.y))
+
+
+
 @contract
 def transform_geom(geom, shift=None, angle=None, origin=None, scale=None):
 

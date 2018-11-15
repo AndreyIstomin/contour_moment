@@ -2,7 +2,6 @@ import os
 import unittest
 import ogr
 from gdal_helper import transform_geom
-
 from moment import Moment
 
 
@@ -153,7 +152,7 @@ class MomentTest(unittest.TestCase):
         with self.subTest(msg='central, rot. inv.: must not be equal'):
 
             m2 = Moment(transform_geom(self.geometries[0], angle=30.0, scale=0.8))
-            self.assertNotAlmostEqual(m1.compute_hu(3, scale_inv=False), m2.compute(3, 3, rotate_inv=True))
+            self.assertNotAlmostEqual(m1.compute_hu(3, scale_inv=False), m2.compute(3, 3, scale_inv=True))
 
         with self.subTest(msg='central, scale. inv.: must not be equal'):
 
