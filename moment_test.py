@@ -54,7 +54,7 @@ class MomentTest(unittest.TestCase):
 
             with self.subTest(i=i, msg='center mass'):
 
-                m = Moment(geom)
+                m = Moment(geom[i])
 
                 cm = (m.compute(1, 0, central=False)/m.compute(0, 0, central=False),
                       m.compute(0, 1, central=False)/m.compute(0, 0, central=False))
