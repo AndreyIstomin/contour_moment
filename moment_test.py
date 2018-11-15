@@ -10,6 +10,8 @@ class MomentTest(unittest.TestCase):
 
     def setUp(self):
 
+        geom_count = 10
+
         res_dir = os.path.join(os.path.dirname(__file__), 'test_resources')
         shp_path = os.path.join(res_dir, 'russia_south_village_3857.shp')
 
@@ -24,7 +26,7 @@ class MomentTest(unittest.TestCase):
         self.geometries = []
         for i, feat in enumerate(lay):
 
-            if i >= 100:
+            if i >= geom_count:
                 break
             self.geometries.append(feat.GetGeometryRef().Clone())
 
@@ -82,25 +84,6 @@ class MomentTest(unittest.TestCase):
 
                         self.assertAlmostEqual(m1.compute(i, j), m2.compute(i, j))
 
-    def test_rotate_invariant(self):
-
-        angles = [33, -11, 190.1]
-        moment_indexes = ((i, j) for i in range(7) for j in range(7))
-
-        for geom in self.geometries:
-
-            for angle in angles:
-
-                translated = transform_geom(geom, angle=angle)
-
-                for i, j in moment_indexes:
-                    m1 = Moment(geom)
-
-                    m2 = Moment(translated)
-
-                    with self.subTest(angle=angle, i=i, j=j, msg='central, rotate_inv'):
-                        self.assertAlmostEqual(m1.compute(i, j, rotate_inv=True), m2.compute(i, j, rotate_inv=True))
-
     def test_scale_invariant(self):
 
         scales = [0.11, 120, 11.1]
@@ -120,6 +103,44 @@ class MomentTest(unittest.TestCase):
                     with self.subTest(scale=scale, i=i, j=j, msg='central, scale_inv'):
                         self.assertAlmostEqual(m1.compute(i, j, scale_inv=True), m2.compute(i, j, scale_inv=True))
 
+    def test_hu_moment(self):
+
+        angles = [33]
+
+        for geom in self.geometries:
+
+            for angle in angles:
+
+                translated = transform_geom(geom, shift=(1.0, 60.0), angle=angle, scale=0.4)
+
+                for i in range(7):
+                    m1 = Moment(geom)
+
+                    m2 = Moment(translated)
+
+                    with self.subTest(angle=angle, i=i, msg='hu-moment'):
+                        self.assertAlmostEqual(m1.compute_hu(i), m2.compute_hu(i))
+
+    def test_hu_moment_no_scale_inv(self):
+
+        geom = self.geometries[0]
+
+        geom_1 = transform_geom(geom, shift=(1.0, 60.0),  angle=30.0)
+
+        geom_2 = transform_geom(geom, shift=(1.0, 60.0),  angle=30.0, scale=1.7)
+
+        m = Moment(geom)
+        m_1 = Moment(geom_1)
+        m_2 = Moment(geom_2)
+
+        for i in range(7):
+
+            with self.subTest(i=i, msg='hu-moment (no scale inv), equality expected'):
+                self.assertAlmostEqual(m.compute_hu(i, scale_inv=False), m_1.compute_hu(i, scale_inv=False))
+
+            with self.subTest(i=i, msg='hu-moment (no scale inv), equality not expected'):
+                self.assertNotAlmostEqual(m.compute_hu(i, scale_inv=False), m_2.compute_hu(i, scale_inv=False))
+
     def test_inequality(self):
 
         m1 = Moment(self.geometries[0])
@@ -132,7 +153,7 @@ class MomentTest(unittest.TestCase):
         with self.subTest(msg='central, rot. inv.: must not be equal'):
 
             m2 = Moment(transform_geom(self.geometries[0], angle=30.0, scale=0.8))
-            self.assertNotAlmostEqual(m1.compute(3, 3, rotate_inv=True), m2.compute(3, 3, rotate_inv=True))
+            self.assertNotAlmostEqual(m1.compute_hu(3, scale_inv=False), m2.compute(3, 3, rotate_inv=True))
 
         with self.subTest(msg='central, scale. inv.: must not be equal'):
 
