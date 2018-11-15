@@ -32,7 +32,7 @@ class Vec2:
 
 
 @contract
-def transform_geom(geom, shift=None, angle=None, origin=None, scale=None):
+def transform_geom(geom, shift=None, angle=None, scale=None):
 
     """ Comfort transformation of GDAL geometry
     :param geom: ogr.Geometry
@@ -40,8 +40,6 @@ def transform_geom(geom, shift=None, angle=None, origin=None, scale=None):
     :type shift: tuple(float|int, float|int)|None
     :param angle: degrees
     :type angle: float|int|None
-    :param origin: rotation origin, default: center mass
-    :type origin: tuple(float, float)|None
     :type scale: (float|int,>0)|None
     :return: ogr.Geometry
     :type: geom: *
@@ -55,14 +53,13 @@ def transform_geom(geom, shift=None, angle=None, origin=None, scale=None):
 
     if angle:
 
-        if not origin:
-            origin = center_mass(geom)
-
-        g = affinity.rotate(g, angle, origin=origin)
+        cm = center_mass(ogr.CreateGeometryFromWkb(g.wkb))
+        g = affinity.rotate(g, angle, origin=cm)
 
     if scale:
 
-        g = affinity.scale(g, scale, scale, scale)
+        cm = center_mass(ogr.CreateGeometryFromWkb(g.wkb))
+        g = affinity.scale(g, scale, scale, scale, origin=cm)
 
     return ogr.CreateGeometryFromWkb(g.wkb)
 
