@@ -72,7 +72,6 @@ def transform_geom(geom, shift=None, angle=None, scale=None):
         g = affinity.translate(g, shift[0], shift[1])
 
     if angle:
-
         cm = center_mass(ogr.CreateGeometryFromWkb(g.wkb))
         g = affinity.rotate(g, angle, origin=cm)
 

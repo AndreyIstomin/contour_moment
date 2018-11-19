@@ -80,8 +80,7 @@ class MomentTest(unittest.TestCase):
                     m2 = Moment(translated)
 
                     with self.subTest(shift=shift, i=i, j=j, msg='central'):
-
-                        self.assertAlmostEqual(m1.compute(i, j), m2.compute(i, j))
+                        self.assertAlmostEqual(m1.compute(i, j, central=True, scale_inv=True), m2.compute(i, j, central=True, scale_inv=True))
 
     def test_scale_invariant(self):
 
@@ -96,7 +95,6 @@ class MomentTest(unittest.TestCase):
 
                 for i, j in moment_indexes:
                     m1 = Moment(geom)
-
                     m2 = Moment(translated)
 
                     with self.subTest(scale=scale, i=i, j=j, msg='central, scale_inv'):
@@ -120,25 +118,26 @@ class MomentTest(unittest.TestCase):
                     with self.subTest(angle=angle, i=i, msg='hu-moment'):
                         self.assertAlmostEqual(m1.compute_hu(i), m2.compute_hu(i))
 
-    def test_hu_moment_no_scale_inv(self):
-
-        geom = self.geometries[0]
-
-        geom_1 = transform_geom(geom, shift=(1.0, 60.0),  angle=30.0)
-
-        geom_2 = transform_geom(geom, shift=(1.0, 60.0),  angle=30.0, scale=1.7)
-
-        m = Moment(geom)
-        m_1 = Moment(geom_1)
-        m_2 = Moment(geom_2)
-
-        for i in range(7):
-
-            with self.subTest(i=i, msg='hu-moment (no scale inv), equality expected'):
-                self.assertAlmostEqual(m.compute_hu(i, scale_inv=False), m_1.compute_hu(i, scale_inv=False))
-
-            with self.subTest(i=i, msg='hu-moment (no scale inv), equality not expected'):
-                self.assertNotAlmostEqual(m.compute_hu(i, scale_inv=False), m_2.compute_hu(i, scale_inv=False))
+    # def test_hu_moment_no_scale_inv(self):
+    #
+    #     geom = self.geometries[0]
+    #
+    #     geom_1 = transform_geom(geom, shift=(1.0, 60.0),  angle=30.0)
+    #
+    #     geom_2 = transform_geom(geom, shift=(1.0, 60.0),  angle=30.0, scale=1.7)
+    #
+    #     m = Moment(geom)
+    #     m_1 = Moment(geom_1)
+    #     m_2 = Moment(geom_2)
+    #
+    #
+    #     for i in range(7):
+    #
+    #         with self.subTest(i=i, msg='hu-moment (no scale inv), equality expected'):
+    #             self.assertAlmostEqual(m.compute_hu(i, scale_inv=False), m_1.compute_hu(i, scale_inv=False))
+    #
+    #         with self.subTest(i=i, msg='hu-moment (no scale inv), equality not expected'):
+    #             self.assertNotAlmostEqual(m.compute_hu(i, scale_inv=False), m_2.compute_hu(i, scale_inv=False))
 
     def test_inequality(self):
 

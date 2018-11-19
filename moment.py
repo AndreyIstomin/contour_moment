@@ -2,10 +2,22 @@ from contracts import contract
 import ogr
 from polynome import Polynome
 from gdal_helper import Vec2
-
-
+from math import copysign
 
 class Moment:
+    HU_DICT = {
+        1: lambda f: f(2, 0) + f(0, 2),
+        2: lambda f: (f(2, 0) - f(0, 2)) ** 2 + 4 * f(1, 1) ** 2,
+        3: lambda f: (f(3, 0) - 3 * f(1, 2)) ** 2 + (3 * f(2, 1) - f(0, 3)) ** 2,
+        4: lambda f: (f(3, 0) + f(1, 2)) ** 2 + (f(2, 1) + f(0, 3)) ** 2,
+        5: lambda f: (f(3, 0) - 3 * f(1, 2))*(f(3, 0) + f(1, 2))*((f(3, 0) + f(1, 2)) ** 2 - 3 * (f(2, 1) + f(0, 3))**2)
+                     + (f(3, 0) - 3 * f(1, 2))*(f(3, 0) + f(1, 2))*((f(3, 0) + f(1, 2)) ** 2 - 3 * (f(2, 1) + f(0, 3))**2),
+        6: lambda f: (f(2, 0) - f(0, 2))*((f(3, 0) + f(1, 2)) ** 2 - (f(2, 1) + f(0, 3)) ** 2)
+                     + 4 * f(1, 1) * (f(3, 0) + f(1, 2)) * (f(2, 1) + f(0, 3)),
+        7: lambda f: (3 * f(2, 1) - f(0, 3)) * (f(3, 0) + f(1, 2)) * (
+                    (f(3, 0) + f(1, 2)) ** 2 - 3 * (f(2, 1) + f(0, 3)) ** 2) -
+                     (f(3, 0) - 3 * f(1, 2))*(f(2, 1) + f(0, 3))*(3 * (f(3, 0) + f(1, 2)) ** 2 - (f(2, 1) + f(0, 3)) ** 2)
+    }
 
     def __init__(self, geom: 'GDAL Polygon'):
         if type(geom) != ogr.Geometry:
@@ -14,24 +26,13 @@ class Moment:
         self.geom = geom
         rings = [geom.GetGeometryRef(i) for i in range(0, geom.GetGeometryCount())]
 
-        # print([ring.ExportToWkt() for ring in rings])
         segments=[]
 
         for ring in rings:
             for i in range(1, ring.GetPointCount()):
                 v1 = Vec2(ring.GetPoint(i-1)[:-1])
                 v2 = Vec2(ring.GetPoint(i)[:-1])
-                b = max(v1, v2)
-                a = min(v1, v2)
-                segments.append([a, b])
-
-
-        # segments = [[Vec2(ring.GetPoint(i-1)[:-1]), Vec2(ring.GetPoint(i)[:-1])] for ring in rings for i in
-        #             range(1, ring.GetPointCount())]
-        #
-        # segments.extend([[Vec2(ring.GetPoint(i)[:-1]), Vec2(ring.GetPoint(i-1)[:-1])] for i in
-        #             range(1, ring.GetPointCount())])
-        print(segments)
+                segments.append([v1, v2])
         self.segments = segments
 
     @contract
@@ -45,19 +46,50 @@ class Moment:
         :type scale_inv: bool
         :rtype: float
         """
-        m_result = 0
-        for s in self.segments:
-            length = (s[1] - s[0]).length()
-            x_coef1 = (s[1].x - s[0].x) / length
-            x_coef2 = (s[1].y - s[0].y) / length
-            a = Polynome.binomial_theorem(x_coef=x_coef1, y_coef=s[0].x, power=i)
-            b = Polynome.binomial_theorem(x_coef=x_coef2, y_coef=s[0].y, power=j)
-            result = a * b
-            m = result.compute_integral_x(x_begin=0, x_end=length, y_value=1)
-            m_result += m
+        if scale_inv:
+            central = True
 
+        m_result = 0
+        av_x = 0
+        av_y = 0
+
+        if central:
+            m00 = self.compute(0, 0, central=False, scale_inv=False)
+            m01 = self.compute(0, 1, central=False, scale_inv=False)
+            m10 = self.compute(1, 0, central=False, scale_inv=False)
+            av_x += -m10 / m00
+            av_y += -m01 / m00
+
+        for s in self.segments:
+            dx = (s[1].x - s[0].x)
+            dy = (s[1].y - s[0].y)
+
+            if dx!=0:
+                if dy!=0:sign_l = copysign(1, dy/dx)
+                else: sign_l = copysign(1, dx)
+            else:
+                sign_l = copysign(1, dy)
+
+            length = sign_l*((s[1] - s[0]).length())
+            k1 = dx / length
+            k2 = dy / length
+            b1 = av_x + s[0].x
+            b2 = av_y + s[0].y
+            m = self.compute_segment_moment(i, j, length, k1, b1, k2, b2)
+            m_result += m
+        if scale_inv:
+            m_result = m_result/(m00**((i+j)/2+1))
         return m_result
 
+
+    @staticmethod
+    def compute_segment_moment(i, j, length, k1, b1, k2, b2):
+        a = Polynome.binomial_theorem(x_coef=k1, y_coef=b1, power=i)
+        b = Polynome.binomial_theorem(x_coef=k2, y_coef=b2, power=j)
+        c = Polynome.binomial_theorem(x_coef=1, y_coef=0, power=1)
+        result = a * b *c
+        m = result.compute_integral_x(x_begin=0, x_end=length, y_value=1)
+        return m
 
     @contract
     def compute_hu(self, i, scale_inv=True):
@@ -70,6 +102,7 @@ class Moment:
         :type scale_inv: bool
         :rtype: float
         """
-
-        return 1.0
+        f = lambda ii, jj: self.compute(ii, jj, scale_inv=scale_inv, central=True)
+        result = self.HU_DICT[i+1](f)
+        return result
 
