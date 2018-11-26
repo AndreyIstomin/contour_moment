@@ -2,26 +2,11 @@ from contracts import contract
 import ogr
 from polynome import Polynome
 from gdal_helper import Vec2
-from math import copysign
+
 
 class Moment:
-    moment_count = 0
-    HU_DICT = {
-        1: lambda f: f(2, 0) + f(0, 2),
-        2: lambda f: (f(2, 0) - f(0, 2)) ** 2 + 4 * f(1, 1) ** 2,
-        3: lambda f: (f(3, 0) - 3 * f(1, 2)) ** 2 + (3 * f(2, 1) - f(0, 3)) ** 2,
-        4: lambda f: (f(3, 0) + f(1, 2)) ** 2 + (f(2, 1) + f(0, 3)) ** 2,
-        5: lambda f: (f(3, 0) - 3 * f(1, 2))*(f(3, 0) + f(1, 2))*((f(3, 0) + f(1, 2)) ** 2 - 3 * (f(2, 1) + f(0, 3))**2)
-                     + (f(3, 0) - 3 * f(1, 2))*(f(3, 0) + f(1, 2))*((f(3, 0) + f(1, 2)) ** 2 - 3 * (f(2, 1) + f(0, 3))**2),
-        6: lambda f: (f(2, 0) - f(0, 2))*((f(3, 0) + f(1, 2)) ** 2 - (f(2, 1) + f(0, 3)) ** 2)
-                     + 4 * f(1, 1) * (f(3, 0) + f(1, 2)) * (f(2, 1) + f(0, 3)),
-        7: lambda f: (3 * f(2, 1) - f(0, 3)) * (f(3, 0) + f(1, 2)) * (
-                    (f(3, 0) + f(1, 2)) ** 2 - 3 * (f(2, 1) + f(0, 3)) ** 2) -
-                     (f(3, 0) - 3 * f(1, 2))*(f(2, 1) + f(0, 3))*(3 * (f(3, 0) + f(1, 2)) ** 2 - (f(2, 1) + f(0, 3)) ** 2)
-    }
-
     def __init__(self, geom: 'GDAL Polygon'):
-        self.moment_count+=1
+
         if type(geom) != ogr.Geometry:
             print("Invalid geometry. Geometry type must be ogr.wkbPolygon")
             return
@@ -87,7 +72,6 @@ class Moment:
             m_result = m_result/(m00**((i+j)+1))
         return m_result
 
-
     @staticmethod
     def compute_segment_moment(i, j, length, k1, b1, k2, b2, k3, b3):
         a = Polynome.binomial_theorem(x_coef=k1, y_coef=b1, power=i)
@@ -109,6 +93,43 @@ class Moment:
         :rtype: float
         """
         f = lambda ii, jj: self.compute(ii, jj, scale_inv=scale_inv, central=True)
-        result = self.HU_DICT[i+1](f)
-        return result
+
+        if i == 0:
+            return f(2, 0) + f(0, 2)
+
+        if i == 1:
+            return (f(2, 0) - f(0, 2)) ** 2 + 4 * f(1, 1) ** 2
+
+        if i == 2:
+            return (f(3, 0) - 3 * f(1, 2)) ** 2 + (3 * f(2, 1) - f(0, 3)) ** 2
+
+        if i ==3:
+            return (f(3, 0) + f(1, 2)) ** 2 + (f(2, 1) + f(0, 3)) ** 2
+
+        if i ==4:
+            f30 = f(3, 0)
+            f12 = f(1, 2)
+            f21 = f(2, 1)
+            f03 = f(0, 3)
+            return ((f30 - 3 * f12) * (f30 + f12) * ((f30 + f12) ** 2 - 3 * (f21 + f03) ** 2)
+                             + (f30 - 3 * f12) * (f30+ f12) * ((f30 + f12) ** 2 - 3 * (f21 + f03) ** 2))
+        if i == 5:
+            f20 = f(2, 0)
+            f02 = f(0, 2)
+            f30 = f(3, 0)
+            f03 = f(0, 3)
+            f12 = f(1, 2)
+            f21 = f(2, 1)
+            f11 = f(1, 1)
+            return ((f20 - f02) * ((f30 + f12) ** 2 - (f21 + f03) ** 2)
+                             + 4 * f11 * (f30 + f12) * (f21 + f03))
+        if i == 6:
+            f30 = f(3, 0)
+            f03 = f(0, 3)
+            f12 = f(1, 2)
+            f21 = f(2, 1)
+            return ((3 * f21 - f03) * (f30 + f12) * ((f30 + f12) ** 2 - 3 * (f21 + f03) ** 2) -
+                             (f30 - 3 * f12) * (f21 + f03) * (3 * (f30 + f12) ** 2 - (f21 + f03) ** 2))
+
+
 
